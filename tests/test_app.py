@@ -64,3 +64,16 @@ def test_redis_failure(client, monkeypatch):
 
     assert client.get("/healthz").status_code == 503
     assert client.get("/visits").status_code == 503
+
+def test_health_failure_message(client, monkeypatch):
+    class UnavailableRedis:
+        def ping(self):
+            raise RedisError("Connection refused")
+
+    monkeypatch.setattr(
+        app_module, "redis_client", UnavailableRedis()
+    )
+
+    response = client.get("/healthz")
+    assert response.status_code == 503
+    assert response.json() == {"detail": "Redis unavailable"}
