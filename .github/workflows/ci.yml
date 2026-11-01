@@ -57,7 +57,16 @@ jobs:
         run: docker build -t visitor-counter-api:1.0 .
 
       - name: Start containers
-        run: docker compose up -d --wait --wait-timeout 90
+        run: |
+          for attempt in 1 2 3; do
+            if docker compose up -d --wait --wait-timeout 90; then
+              exit 0
+            fi
+            echo "docker compose up failed on attempt ${attempt}; retrying..."
+            sleep 15
+          done
+          echo "docker compose up failed after 3 attempts."
+          exit 1
 
       - name: Run integration tests
         run: bash tests/integration.sh
